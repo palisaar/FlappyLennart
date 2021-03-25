@@ -42,14 +42,40 @@ def lennart_logic():
     return new_lennart, new_lennart_rect
 
 
+def score_display():
+    score_sur = game_font.render(str(score), True, (0, 0, 0))
+    score_rect = score_sur.get_rect(center=(288, 100))
+    screen.blit(score_sur, score_rect)
+
+
+def high_score_display():
+    high_score_sur = game_font.render('high score: ' + str(high_score), True, (0, 0, 0))
+    high_score_rect = high_score_sur.get_rect(center=(288, 100))
+    screen.blit(high_score_sur, high_score_rect)
+
+
+def count(pipes):  # Pipes bewegen
+    score = 0
+    for pipe in pipes:
+        if 90 < pipe.centerx < 100:
+            score = 1
+        else:
+            score = 0
+    return score
+
+
+pygame.mixer.pre_init()
 pygame.init()
 screen = pygame.display.set_mode((576, 1024))  # unser Fenster
 clock = pygame.time.Clock()  # Framerate limitierung
+game_font = pygame.font.Font('assets/Impact.ttf', 50)
 
 # Spielvariabeln
 downforce = 0.25  # Schwerkraft
 lennart_movement = 0  # bewegung die wir mit Schwerkraft manipulieren
 game_over = False
+score = 0
+high_score = 0
 
 bg_surface = pygame.image.load(
     'assets/sprites/background-day.png').convert()  # läd unseren Hintergrund und konvertiert ihn in etwas mit dem man in Pygame arbeiten kann
@@ -78,6 +104,11 @@ pipe_height = [400, 450, 550, 600, 500]  # höhe der Pipes
 game_over_sur = pygame.image.load('assets/sprites/gameOverOne.png')
 game_over_rect = game_over_sur.get_rect(center=(288, 512))
 
+# sounds
+wush = pygame.mixer.Sound('assets/wush.wav')
+pling = pygame.mixer.Sound('assets/pling.wav')
+newhs = pygame.mixer.Sound('assets/newhs.wav')
+
 while True:  # the game loop
 
     for event in pygame.event.get():  # event loop, schaut nach clicks, bewegungen etc
@@ -88,9 +119,10 @@ while True:  # the game loop
             if event.key == pygame.K_SPACE and game_over == False:  # wenn wir space drücken, springt lennart hoch
                 lennart_movement = 0
                 lennart_movement -= 10
+                wush.play()  # spielt wush sound
             if event.key == pygame.K_SPACE and game_over == True:  # spiel neustart
                 game_over = False
-                pipe_ls.clear()
+                pipe_ls.clear()  # sorgt dafür
                 lennart_rect.center = (100, 512)
                 lennart_movement = 0
         if event.type == SPAWNPIPE:
@@ -114,7 +146,18 @@ while True:  # the game loop
         # pipes
         pipe_ls = move_pipe(pipe_ls)
         draw_pipes(pipe_ls)
+
+        score_temp = count(pipe_ls)
+        if score_temp == 1:
+            pling.play()
+        score = score + score_temp
+        score_display()
     else:
+        if score > high_score:
+            high_score = score
+            newhs.play()
+        score = 0
+        high_score_display()
         screen.blit(game_over_sur, game_over_rect)
 
     # floor, nicht in der IF Bedingung damit sich der Boden weiter bewegt auch wenn man ein game over bekommt
